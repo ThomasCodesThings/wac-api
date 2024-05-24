@@ -1,26 +1,26 @@
 openapi: 3.0.0
 servers:
-  - description: Cluster Endpoint
-    url: /api
+  - url: /api
+    description: Cluster Endpoint
 info:
   description: Department List management for Web-In-Cloud system
   version: "1.0.0"
   title: Waiting List Api
   contact:
-    email: <your_email>
+    email: your_email@example.com
   license:
     name: CC BY 4.0
     url: "https://creativecommons.org/licenses/by/4.0/"
 tags:
- - name: departmentList
-   description: Department List API
+  - name: Operations
+    description: Department List API
 
 paths:
-  /list:
+  "/operations":
     get:
-      summary: Provides the ambulance waiting list
-      operationId: getList
-      description: By using ambulanceId you get list of entries in ambulance waiting list
+      summary: Provides the operations waiting list
+      operationId: getOperations
+      description: Get Operations in all departments
       responses:
         '200':
           description: Value of the waiting list entries
@@ -29,74 +29,209 @@ paths:
               schema:
                 type: array
                 items:
-                  type: object
-                  properties:
-                    patientId:
-                      type: integer
-                      format: int64
-                      description: Unique id of the patient in waiting list
-                    firstname:
-                      type: string
-                      description: Name of patient in waiting list
-                    surname:
-                      type: string
-                      description: Surname of patient in waiting list
-                    department:
-                      type: string
-                      description: Department of patient in waiting list
-                    appointmentDate:
-                      type: string
-                      format: date-time
-                      description: Date of appointment of patient in waiting list
-                    duration:
-                      type: integer
-                      format: int32
-                      description: Duration of appointment of patient in waiting list
-      examples:
-        response:
-          $ref: '#/components/examples/DepartmentListExample'
+                  $ref: '#/components/schemas/Operations'
+              examples:
+                response:
+                  $ref: '#/components/examples/OperationsExample'
+        '404':
+          description: Invalid something
+    post:
+      summary: Add new operation to waiting list
+      operationId: addOperation
+      description: Add a new operation to the waiting list
+      requestBody:
+        description: Operation object that needs to be added to the department
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Operations'
+      responses:
+        '200':
+          description: Operation added successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Operations'
+              examples:
+                response:
+                  $ref: '#/components/examples/OperationsExample'
+        '404':
+          description: Invalid something
+        '405':
+          description: Invalid input
+        '409':
+          description: Operation already exists
+        '500':
+          description: Internal server error
+  
+  "/operations/{operationId}":
+    get:
+      summary: Provides the operation waiting list by ID
+      operationId: getOperation
+      description: Get list of entries in ambulance waiting list by operation ID
+      parameters:
+        - name: operationId
+          in: path
+          description: ID of operation to return
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Value of the waiting list entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Operations'
+              examples:
+                response:
+                  $ref: '#/components/examples/OperationsExample'
+        '404':
+          description: Invalid something
+    put:
+      summary: Edit operation in waiting list
+      operationId: editOperation
+      description: Edit an operation in the waiting list by operation ID
+      parameters:
+        - name: operationId
+          in: path
+          description: ID of operation to return
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        description: Operation object that needs to be edited in the department
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Operations'
+      responses:
+        '200':
+          description: Operation edited successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Operations'
+              examples:
+                response:
+                  $ref: '#/components/examples/OperationsExample'
+        '404':
+          description: Invalid something
+        '405':
+          description: Invalid input
+        '409':
+          description: Operation already exists
+        '500':
+          description: Internal server error
+
+    delete:
+      summary: Delete operation from waiting list
+      operationId: deleteOperation
+      description: Delete an operation from the waiting list by operation ID
+      parameters:
+        - name: operationId
+          in: path
+          description: ID of operation to return
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Operation deleted successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Operations'
+              examples:
+                response:
+                  $ref: '#/components/examples/OperationsExample'
+        '404':
+          description: Invalid something
+        '405':
+          description: Invalid input
+        '409':
+          description: Operation already exists
+        '500':
+          description: Internal server error
+
+
+  "/department/{departmentId}":
+    get:
+      summary: Provides list of Operations in department
+      operationId: getDepartmentOperations
+      description: Get list of entries in ambulance waiting list by department ID
+      parameters:
+        - name: departmentId
+          in: path
+          description: ID of department to return
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Value of the waiting list entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Operations'
+              examples:
+                response:
+                  $ref: '#/components/examples/OperationsExample'
         '404':
           description: Invalid something
 
 components:
- schemas:
-   DepartmentList:
-     type: object
-     required: [patientId, firstname, surname, department, appointmentDate, duration]
-     properties:
-       patientId:
-         type: integer
-         format: int64
-         example: 1
-         description: Unique id of the patient in waiting list
-       firstname:
-         type: string
-         example: Jožko
-         description: Name of patient in waiting list
-       surname:
-         type: string
-         example: Mrkvicka
-         description: Surname of patient in waiting list
+  schemas:
+    Operations:
+      type: object
+      required:
+        - patientId
+        - firstname
+        - surname
+        - department
+        - appointmentDate
+        - duration
+      properties:
+        patientId:
+          type: integer
+          format: int64
+          description: Unique id of the patient in waiting list
+        firstname:
+          type: string
+          description: Name of patient in waiting list
+        surname:
+          type: string
+          description: Surname of patient in waiting list
+        department:
+          type: string
+          description: Department of patient in waiting list
+        appointmentDate:
+          type: string
+          format: date-time
+          description: Date of appointment of patient in waiting list
+        duration:
+          type: integer
+          format: int32
+          description: Duration of appointment of patient in waiting list
 
-       department:
-         type: string
-         example: Surgery
-         description: Department of patient in waiting list
-
-       appointmentDate:
-         type: string
-         format: date-time
-         example: "2038-12-24T10:05:00Z"
-         description: Date of appointment of patient in waiting list
-
-       duration:
-         type: integer
-         format: int32 
-         example: 15
-         description: Duration of appointment of patient in waiting list
-       
-   examples:
-    DepartmentListExample:
+  examples:
+    OperationsExample:
       value:
         - patientId: 1
           firstname: Jožko
@@ -113,6 +248,12 @@ components:
         - patientId: 3
           firstname: Ferko
           surname: Mrkvička
-          department: Surgery
+          department: Orthopedics
+          appointmentDate: "2038-12-24T10:35:00Z"
+          duration: 60
+        - patientId: 4
+          firstname: Ferko
+          surname: Mrkvička
+          department: Orthopedics
           appointmentDate: "2038-12-24T10:35:00Z"
           duration: 60

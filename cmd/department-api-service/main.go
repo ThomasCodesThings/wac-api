@@ -6,6 +6,7 @@ import (
     "strings"
     "github.com/gin-gonic/gin"
     "github.com/ThomasCodesThings/wac-api/api"
+    "github.com/ThomasCodesThings/wac-api/ap/internal/department"
 )
 
 func main() {
@@ -20,6 +21,7 @@ func main() {
     }
     server := gin.New()
     server.Use(gin.Recovery())
+    department.addRoutes(server)
     // request routings
     server.GET("/openapi", api.HandleOpenApi)
     server.Run(":" + port)
