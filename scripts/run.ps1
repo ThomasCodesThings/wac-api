@@ -21,6 +21,9 @@ switch ($command) {
     "openapi" {
         docker run --rm -ti -v ${ProjectRoot}:/local openapitools/openapi-generator-cli generate -c /local/scripts/generator-cfg.yaml
     }
+    "docker" {
+       docker build --no-cache -t thomascodesthings/department-webapi:local-build -f ${ProjectRoot}/build/docker/Dockerfile .
+   }
     "start" {
         mongo up --detach
         go run ${ProjectRoot}/cmd/department-api-service
