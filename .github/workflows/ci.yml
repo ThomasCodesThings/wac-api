@@ -43,7 +43,7 @@ jobs:
       id: meta
       uses: docker/metadata-action@v4.6.0
       with:
-        images: <docker_id>/ambulance-wl-webapi
+        images: thomascodesthings/department-webapi
         tags: |
             type=schedule
             type=ref,event=branch
