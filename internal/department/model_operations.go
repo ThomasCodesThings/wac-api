@@ -10,10 +10,6 @@
 
 package department
 
-import (
-	"time"
-)
-
 type Operation struct {
 
 	// Unique id of the patient in waiting list
@@ -29,7 +25,7 @@ type Operation struct {
 	Department string `json:"department"`
 
 	// Date of appointment of patient in waiting list
-	AppointmentDate time.Time `json:"appointmentDate"`
+	AppointmentDate string `json:"appointmentDate"`
 
 	// Duration of appointment of patient in waiting list
 	Duration int32 `json:"duration"`

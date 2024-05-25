@@ -31,9 +31,9 @@ func main() {
         AllowOrigins:     []string{"*"},
         AllowMethods:     []string{"GET", "PUT", "POST", "DELETE", "PATCH"},
         AllowHeaders:     []string{"Origin", "Authorization", "Content-Type"},
-        ExposeHeaders:    []string{""},
+        ExposeHeaders:    []string{},
         AllowCredentials: false,
-        MaxAge: 12 * time.Hour,
+        MaxAge: 24 * time.Hour,
     })
     server.Use(corsMiddleware)
 

@@ -5,8 +5,6 @@ import (
   "github.com/gin-gonic/gin"
   "github.com/google/uuid"
   "go.mongodb.org/mongo-driver/bson"
-  //"context"
-  "time"
   "github.com/ThomasCodesThings/wac-api/internal/db_service"
   "strconv"
 )
@@ -135,7 +133,7 @@ func (this *implDepartmentAPI) AddOperation(ctx *gin.Context) {
 	operation.Firstname = ctx.PostForm("firstname")
 	operation.Lastname = ctx.PostForm("lastname")
 	operation.Department = ctx.PostForm("department")
-	operation.AppointmentDate = time.Now()
+	operation.AppointmentDate = ctx.PostForm("appointmentDate")
 	operation.Duration = int32(duration)
 
 	err = db.CreateDocument(ctx, operation.Id, &operation, "operation")
@@ -171,6 +169,7 @@ func (this *implDepartmentAPI) EditOperation(ctx *gin.Context) {
 	firstname := ctx.PostForm("firstname")
 	lastname := ctx.PostForm("lastname")
 	department := ctx.PostForm("department")
+	appointmentDate := ctx.PostForm("appointmentDate")
 	duration, err := strconv.Atoi(ctx.PostForm("duration"))
 
 	var operation Operation
@@ -178,7 +177,7 @@ func (this *implDepartmentAPI) EditOperation(ctx *gin.Context) {
 	operation.Firstname = firstname
 	operation.Lastname = lastname
 	operation.Department = department
-	operation.AppointmentDate = time.Now()
+	operation.AppointmentDate = appointmentDate
 	operation.Duration = int32(duration)
 
 	err = db.UpdateDocument(ctx, operationId, &operation, "operation")
@@ -266,7 +265,7 @@ func (this *implDepartmentAPI) GetDepartmentOperations(ctx *gin.Context) {
 }
 
 func (this *implDepartmentAPI) GetDepartments(ctx *gin.Context) {
-	db := db_service.NewMongoService[Operation](db_service.MongoServiceConfig{})
+	db := db_service.NewMongoService[Department](db_service.MongoServiceConfig{})
 
 	departments, err := db.FindDocuments(ctx, "department")
 
