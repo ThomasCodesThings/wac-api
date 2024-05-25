@@ -14,16 +14,16 @@ import (
 	"time"
 )
 
-type Operations struct {
+type Operation struct {
 
 	// Unique id of the patient in waiting list
-	PatientId int64 `json:"patientId"`
+	Id string `json:"operationId"`
 
 	// Name of patient in waiting list
 	Firstname string `json:"firstname"`
 
 	// Surname of patient in waiting list
-	Surname string `json:"surname"`
+	Lastname string `json:"surname"`
 
 	// Department of patient in waiting list
 	Department string `json:"department"`
@@ -33,4 +33,10 @@ type Operations struct {
 
 	// Duration of appointment of patient in waiting list
 	Duration int32 `json:"duration"`
+}
+
+type Department struct {
+	Id string `json:"departmentId"`
+	// Name of department
+	Name string `json:"name"`
 }

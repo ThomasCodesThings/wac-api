@@ -6,6 +6,10 @@ import (
     "strings"
     "github.com/gin-gonic/gin"
     "github.com/ThomasCodesThings/wac-api/internal/department"
+    //"github.com/ThomasCodesThings/wac-api/internal/db_service"
+    //"context"
+    "time"
+    "github.com/gin-contrib/cors"
 )
 
 func main() {
@@ -23,7 +27,22 @@ func main() {
 
     server := gin.New()
     server.Use(gin.Recovery())
+    corsMiddleware := cors.New(cors.Config{
+        AllowOrigins:     []string{"*"},
+        AllowMethods:     []string{"GET", "PUT", "POST", "DELETE", "PATCH"},
+        AllowHeaders:     []string{"Origin", "Authorization", "Content-Type"},
+        ExposeHeaders:    []string{""},
+        AllowCredentials: false,
+        MaxAge: 12 * time.Hour,
+    })
+    server.Use(corsMiddleware)
 
+    //dbService := db_service.NewMongoService[department.Operation](db_service.MongoServiceConfig{})
+    //defer dbService.Disconnect(context.Background())
+    //server.Use(func(ctx *gin.Context) {
+        //ctx.Set("db_service", dbService)
+        //ctx.Next()
+    //})
     // Create a new instance of DepartmentAPI
     api := department.NewDepartmentAPI()
 

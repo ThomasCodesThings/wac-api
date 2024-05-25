@@ -3,6 +3,12 @@ package department
 import (
   "net/http"
   "github.com/gin-gonic/gin"
+  "github.com/google/uuid"
+  "go.mongodb.org/mongo-driver/bson"
+  //"context"
+  "time"
+  "github.com/ThomasCodesThings/wac-api/internal/db_service"
+  "strconv"
 )
 
 type DepartmentAPI interface {
@@ -26,46 +32,327 @@ type DepartmentAPI interface {
 
 	// GetOperations - Provides the operations waiting list
 	GetOperations(ctx *gin.Context)
+
+	// GetDepartments - Provides the list of departments
+	GetDepartments(ctx *gin.Context)
+
+	// AddDepartment - Add new department
+	AddDepartment(ctx *gin.Context)
+
+	// DeleteDepartment - Delete department
+	DeleteDepartment(ctx *gin.Context)
+
 }
 
 // implDepartmentAPI struct definition
-type implDepartmentAPI struct{}
+type implDepartmentAPI struct{
+}
 
 // NewDepartmentAPI creates a new instance of DepartmentAPI
 func NewDepartmentAPI() DepartmentAPI {
-	return &implDepartmentAPI{}
+	return &implDepartmentAPI{
+	}
 }
 
 func (this *implDepartmentAPI) AddRoutes(routerGroup *gin.RouterGroup) {
 	routerGroup.Handle(http.MethodPost, "/operations", this.AddOperation)
 	routerGroup.Handle(http.MethodDelete, "/operations/:operationId", this.DeleteOperation)
 	routerGroup.Handle(http.MethodPut, "/operations/:operationId", this.EditOperation)
-	routerGroup.Handle(http.MethodGet, "/department/:departmentId", this.GetDepartmentOperations)
 	routerGroup.Handle(http.MethodGet, "/operations/:operationId", this.GetOperation)
 	routerGroup.Handle(http.MethodGet, "/operations", this.GetOperations)
+
+	routerGroup.Handle(http.MethodGet, "/departments", this.GetDepartments)
+	routerGroup.Handle(http.MethodGet, "/departments/:departmentName", this.GetDepartmentOperations)
+	routerGroup.Handle(http.MethodPost, "/departments/", this.AddDepartment)
+	routerGroup.Handle(http.MethodDelete, "/departments/:departmentId", this.DeleteDepartment) 
 }
 
 // Nasledujúci kód je kópiou vygenerovaného a zakomentovaného kódu zo súboru api_ambulance_conditions.go
 func (this *implDepartmentAPI) GetOperations(ctx *gin.Context) {
-	ctx.AbortWithStatus(http.StatusBadGateway)
+	db := db_service.NewMongoService[Operation](db_service.MongoServiceConfig{})
+    documents, err := db.FindDocuments(ctx, "operation")
+
+    switch err {
+    case nil:
+        ctx.JSON(http.StatusOK, documents)
+    case db_service.ErrNotFound:
+        ctx.JSON(
+            http.StatusNotFound,
+            gin.H{
+                "status":  "Not Found",
+                "message": "Ambulance not found",
+                "error":   err.Error(),
+            },
+        )
+    default:
+        ctx.JSON(
+            http.StatusBadGateway,
+            gin.H{
+                "status":  "Bad Gateway",
+                "message": "Failed to get list of operations",
+                "error":   err.Error(),
+            })
+    }
 }
 
 func (this *implDepartmentAPI) GetOperation(ctx *gin.Context) {
-	ctx.AbortWithStatus(http.StatusBadGateway)
+	db := db_service.NewMongoService[Operation](db_service.MongoServiceConfig{})
+	//ctx.Set("db_service", dbService)
+	
+	operationId := ctx.Param("operationId")
+	document, err := db.FindDocument(ctx, operationId, "operation")
+
+	switch err {
+	case nil:
+		ctx.JSON(http.StatusOK, document)
+	case db_service.ErrNotFound:
+		ctx.JSON(
+			http.StatusNotFound,
+			gin.H{
+				"status":  "Not Found",
+				"message": "Operation not found",
+				"error":   err.Error(),
+			},
+		)
+	default:
+		ctx.JSON(
+			http.StatusBadGateway,
+			gin.H{
+				"status":  "Bad Gateway",
+				"message": "Failed to get operation",
+				"error":   err.Error(),
+			})
+	}
 }
 
 func (this *implDepartmentAPI) AddOperation(ctx *gin.Context) {
-	ctx.AbortWithStatus(http.StatusBadGateway)
+	db := db_service.NewMongoService[Operation](db_service.MongoServiceConfig{})
+	
+	duration, err := strconv.Atoi(ctx.PostForm("duration"))
+
+	var operation Operation
+	operation.Id = uuid.New().String()
+	operation.Firstname = ctx.PostForm("firstname")
+	operation.Lastname = ctx.PostForm("lastname")
+	operation.Department = ctx.PostForm("department")
+	operation.AppointmentDate = time.Now()
+	operation.Duration = int32(duration)
+
+	err = db.CreateDocument(ctx, operation.Id, &operation, "operation")
+
+	switch err {
+	case nil:
+		ctx.JSON(http.StatusCreated, operation)
+	case db_service.ErrConflict:
+		ctx.JSON(
+			http.StatusConflict,
+			gin.H{
+				"status":  "Conflict",
+				"message": "Operation already exists",
+				"error":   err.Error(),
+			},
+		)
+
+	default:
+		ctx.JSON(
+			http.StatusBadGateway,
+			gin.H{
+				"status":  "Bad Gateway",
+				"message": "Failed to create operation",
+				"error":   err.Error(),
+			})
+	}
 }
 
 func (this *implDepartmentAPI) EditOperation(ctx *gin.Context) {
-	ctx.AbortWithStatus(http.StatusBadGateway)
+	db := db_service.NewMongoService[Operation](db_service.MongoServiceConfig{})
+	
+	operationId := ctx.Param("operationId")
+	firstname := ctx.PostForm("firstname")
+	lastname := ctx.PostForm("lastname")
+	department := ctx.PostForm("department")
+	duration, err := strconv.Atoi(ctx.PostForm("duration"))
+
+	var operation Operation
+	operation.Id = operationId
+	operation.Firstname = firstname
+	operation.Lastname = lastname
+	operation.Department = department
+	operation.AppointmentDate = time.Now()
+	operation.Duration = int32(duration)
+
+	err = db.UpdateDocument(ctx, operationId, &operation, "operation")
+
+	switch err {
+	case nil:
+		ctx.JSON(http.StatusOK, operation)
+	case db_service.ErrNotFound:
+		ctx.JSON(
+			http.StatusNotFound,
+			gin.H{
+				"status":  "Not Found",
+				"message": "Operation not found",
+				"error":   err.Error(),
+			},
+		)
+	default:
+		ctx.JSON(
+			http.StatusBadGateway,
+			gin.H{
+				"status":  "Bad Gateway",
+				"message": "Failed to update operation",
+				"error":   err.Error(),
+			})
+	}
 }
 
 func (this *implDepartmentAPI) DeleteOperation(ctx *gin.Context) {
-	ctx.AbortWithStatus(http.StatusBadGateway)
-}
+	db := db_service.NewMongoService[Operation](db_service.MongoServiceConfig{})
+	
+	operationId := ctx.Param("operationId")
+	err := db.DeleteDocument(ctx, operationId, "operation")
+
+	switch err {
+	case nil:
+		ctx.JSON(http.StatusNoContent, nil)
+	case db_service.ErrNotFound:
+		ctx.JSON(
+			http.StatusNotFound,
+			gin.H{
+				"status":  "Not Found",
+				"message": "Operation not found",
+				"error":   err.Error(),
+			},
+		)
+	default:
+		ctx.JSON(
+			http.StatusBadGateway,
+			gin.H{
+				"status":  "Bad Gateway",
+				"message": "Failed to delete operation",
+				"error":   err.Error(),
+			})
+	}
+}	
 
 func (this *implDepartmentAPI) GetDepartmentOperations(ctx *gin.Context) {
-	ctx.AbortWithStatus(http.StatusBadGateway)
+	db := db_service.NewMongoService[Operation](db_service.MongoServiceConfig{})
+	
+	departmentName := ctx.Param("departmentName")
+	filter := bson.D{{Key: "department", Value: departmentName}}
+	operations, err := db.FindDocumentsByQuery(ctx, filter, "operation")
+
+	switch err {
+	case nil:
+		ctx.JSON(http.StatusOK, operations)
+	case db_service.ErrNotFound:
+		ctx.JSON(
+			http.StatusNotFound,
+			gin.H{
+				"status":  "Not Found",
+				"message": "Operations not found",
+				"error":   err.Error(),
+			},
+		)
+	default:
+		ctx.JSON(
+			http.StatusBadGateway,
+			gin.H{
+				"status":  "Bad Gateway",
+				"message": "Failed to get list of operations by department",
+				"error":   err.Error(),
+			})
+	}
 }
+
+func (this *implDepartmentAPI) GetDepartments(ctx *gin.Context) {
+	db := db_service.NewMongoService[Operation](db_service.MongoServiceConfig{})
+
+	departments, err := db.FindDocuments(ctx, "department")
+
+	switch err {
+	case nil:
+		ctx.JSON(http.StatusOK, departments)
+	case db_service.ErrNotFound:
+		ctx.JSON(
+			http.StatusNotFound,
+			gin.H{
+				"status":  "Not Found",
+				"message": "Departments not found",
+				"error":   err.Error(),
+			},
+		)
+	default:
+		ctx.JSON(
+			http.StatusBadGateway,
+			gin.H{
+				"status":  "Bad Gateway",
+				"message": "Failed to get list of departments",
+				"error":   err.Error(),
+			})
+	}
+}
+
+func (this *implDepartmentAPI) AddDepartment(ctx *gin.Context) {
+	db := db_service.NewMongoService[Department](db_service.MongoServiceConfig{})
+
+	var department Department
+	department.Id = uuid.New().String()
+	department.Name = ctx.PostForm("name")
+
+	err := db.CreateDocument(ctx, department.Id, &department, "department")
+
+	switch err {
+	case nil:
+		ctx.JSON(http.StatusCreated, department)
+	case db_service.ErrConflict:
+		ctx.JSON(
+			http.StatusConflict,
+			gin.H{
+				"status":  "Conflict",
+				"message": "Department already exists",
+				"error":   err.Error(),
+			},
+		)
+
+	default:
+		ctx.JSON(
+			http.StatusBadGateway,
+			gin.H{
+				"status":  "Bad Gateway",
+				"message": "Failed to create department",
+				"error":   err.Error(),
+			})
+	}
+}
+
+func (this *implDepartmentAPI) DeleteDepartment(ctx *gin.Context) {
+	db := db_service.NewMongoService[Department](db_service.MongoServiceConfig{})
+	
+	departmentId := ctx.Param("departmentId")
+	err := db.DeleteDocument(ctx, departmentId, "department")
+
+	switch err {
+	case nil:
+		ctx.JSON(http.StatusNoContent, nil)
+	case db_service.ErrNotFound:
+		ctx.JSON(
+			http.StatusNotFound,
+			gin.H{
+				"status":  "Not Found",
+				"message": "Department not found",
+				"error":   err.Error(),
+			},
+		)
+
+	default:
+		ctx.JSON(
+			http.StatusBadGateway,
+			gin.H{
+				"status":  "Bad Gateway",
+				"message": "Failed to delete department",
+				"error":   err.Error(),
+			})			
+	}
+}
+
