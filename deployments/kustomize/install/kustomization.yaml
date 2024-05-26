@@ -12,7 +12,7 @@ configMapGenerator:
   - name: cernica-department-webapi-config
     literals:
       - database=cernica-department
-      - collection=department
+      - collection=operation
 patches:
  - path: patches/webapi.deployment.yaml
    target:
