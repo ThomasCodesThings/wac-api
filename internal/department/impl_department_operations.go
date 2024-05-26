@@ -60,7 +60,8 @@ func (this *implDepartmentAPI) AddRoutes(routerGroup *gin.RouterGroup) {
 	routerGroup.Handle(http.MethodGet, "/operations", this.GetOperations)
 
 	routerGroup.Handle(http.MethodGet, "/departments", this.GetDepartments)
-	routerGroup.Handle(http.MethodGet, "/departments/:departmentName", this.GetDepartmentOperations)
+	routerGroup.Handle(http.MethodGet, "/departments/:departmentId", this.GetDepartment)
+	routerGroup.Handle(http.MethodGet, "/departments/:departmentId/operations", this.GetDepartmentOperations)
 	routerGroup.Handle(http.MethodPost, "/departments/", this.AddDepartment)
 	routerGroup.Handle(http.MethodDelete, "/departments/:departmentId", this.DeleteDepartment) 
 }
@@ -235,11 +236,12 @@ func (this *implDepartmentAPI) DeleteOperation(ctx *gin.Context) {
 }	
 
 func (this *implDepartmentAPI) GetDepartmentOperations(ctx *gin.Context) {
-	db := db_service.NewMongoService[Operation](db_service.MongoServiceConfig{})
 	
-	departmentName := ctx.Param("departmentName")
-	filter := bson.D{{Key: "department", Value: departmentName}}
-	operations, err := db.FindDocumentsByQuery(ctx, filter, "operation")
+	departmentId := ctx.Param("departmentId")
+	department, err := db_service.NewMongoService[Department](db_service.MongoServiceConfig{}).FindDocument(ctx, departmentId, "department")
+
+	filter := bson.D{{Key: "department", Value: department.Name}}
+	operations, err := db_service.NewMongoService[Operation](db_service.MongoServiceConfig{}).FindDocumentsByQuery(ctx, filter, "operation")
 
 	switch err {
 	case nil:
@@ -259,6 +261,35 @@ func (this *implDepartmentAPI) GetDepartmentOperations(ctx *gin.Context) {
 			gin.H{
 				"status":  "Bad Gateway",
 				"message": "Failed to get list of operations by department",
+				"error":   err.Error(),
+			})
+	}
+}
+
+func (this *implDepartmentAPI) GetDepartment(ctx *gin.Context) {
+	db := db_service.NewMongoService[Department](db_service.MongoServiceConfig{})
+
+	departmentId := ctx.Param("departmentId")
+	department, err := db.FindDocument(ctx, departmentId, "department")
+
+	switch err {
+	case nil:
+		ctx.JSON(http.StatusOK, department)
+	case db_service.ErrNotFound:
+		ctx.JSON(
+			http.StatusNotFound,
+			gin.H{
+				"status":  "Not Found",
+				"message": "Department not found",
+				"error":   err.Error(),
+			},
+		)
+	default:
+		ctx.JSON(
+			http.StatusBadGateway,
+			gin.H{
+				"status":  "Bad Gateway",
+				"message": "Failed to get department",
 				"error":   err.Error(),
 			})
 	}
@@ -298,6 +329,7 @@ func (this *implDepartmentAPI) AddDepartment(ctx *gin.Context) {
 	var department Department
 	department.Id = uuid.New().String()
 	department.Name = ctx.PostForm("name")
+	department.PricePerHour, _ = strconv.ParseFloat(ctx.PostForm("pricePerHour"), 32)
 
 	err := db.CreateDocument(ctx, department.Id, &department, "department")
 

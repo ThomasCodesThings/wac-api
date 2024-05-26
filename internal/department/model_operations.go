@@ -35,4 +35,6 @@ type Department struct {
 	Id string `json:"departmentId"`
 	// Name of department
 	Name string `json:"name"`
+
+	PricePerHour float64 `json:"pricePerHour"`
 }
